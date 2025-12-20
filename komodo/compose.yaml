@@ -109,7 +109,7 @@ services:
       - ./komodo-data/repo-cache:/repo-cache
     labels: ## Traefik Labels
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=${PROXY_NETWORK}"
         ## HTTP Routers
       - "traefik.http.routers.$PROJECT_NAME-rtr.rule=
         Host(`${SERVICE_NAME}.${DOMAIN_NAME}`) ||
@@ -145,7 +145,7 @@ volumes:
 
 networks:
   frontend:
-    name: ${TRAEFIK_NETWORK}
+    name: ${PROXY_NETWORK}
     external: true
   backend:
     internal: true
