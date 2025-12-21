@@ -1,5 +1,3 @@
-*/*-data
-*/*-data/*
-*/*-logs
-*/*-logs/*
-*/.env
+*-data/*
+*-logs/*
+.env
