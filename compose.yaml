@@ -54,7 +54,7 @@ services:
       POSTGRES_PASSWORD: ${KOMODO_DB_PASSWORD}
       POSTGRES_DB: postgres
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ${DOCKER_VOLUMES}/${PROJECT_NAME}/postgres-data:/var/lib/postgresql/data
     labels: ## Komodo Labels
       - "komodo.skip" # Prevent Komodo from stopping with StopAllContainers
     networks:
@@ -73,7 +73,7 @@ services:
       <<: *default-environment
       FERRETDB_POSTGRESQL_URL: postgres://${KOMODO_DB_USERNAME}:${KOMODO_DB_PASSWORD}@postgres:5432/postgres
     volumes:
-      - ferretdb-state:/state
+      - ${DOCKER_VOLUMES}/${PROJECT_NAME}/ferretdb-data:/state
     labels: ## Komodo Labels
       - "komodo.skip" # Prevent Komodo from stopping with StopAllContainers
     networks:
@@ -104,9 +104,9 @@ services:
       KOMODO_HOST: ${PROJECT_NAME}.${SUB_DOMAIN_NAME}${DOMAIN_NAME}   
     volumes:
       - ./komodo-config/core.config.toml:/config/config.toml:ro
-      - ./komodo-data/backups:/backups
-      - ./komodo-data/sync:/syncs
-      - ./komodo-data/repo-cache:/repo-cache
+      - ${DOCKER_VOLUMES}/${PROJECT_NAME}/komodo-data/backups:/backups
+      - ${DOCKER_VOLUMES}/${PROJECT_NAME}/komodo-data/sync:/syncs
+      - ${DOCKER_VOLUMES}/${PROJECT_NAME}/komodo-data/repo-cache:/repo-cache
     labels: ## Traefik Labels
       - "traefik.enable=true"
       - "traefik.docker.network=${PROXY_NETWORK}"
@@ -135,13 +135,13 @@ services:
     #  test: ["CMD", "", ""]
     #  <<: *default-healthcheck
 
-volumes:
-  # Postgres
-  postgres-data:
-    name: ${PROJECT_NAME}_postgres_data
-  # FerretDB
-  ferretdb-state:
-    name: ${PROJECT_NAME}_ferretdb_data
+#volumes:
+#  # Postgres
+#  postgres-data:
+#    name: ${PROJECT_NAME}_postgres_data
+#  # FerretDB
+#  ferretdb-state:
+#    name: ${PROJECT_NAME}_ferretdb_data
 
 networks:
   frontend:
