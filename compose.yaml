@@ -86,7 +86,6 @@ services:
     #  test: ["CMD", "", ""]
     #  <<: *default-healthcheck
 
-
   core:
     <<: *default-base
     image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_VERSION:-latest}
@@ -134,14 +133,6 @@ services:
     #healthcheck:
     #  test: ["CMD", "", ""]
     #  <<: *default-healthcheck
-
-#volumes:
-#  # Postgres
-#  postgres-data:
-#    name: ${PROJECT_NAME}_postgres_data
-#  # FerretDB
-#  ferretdb-state:
-#    name: ${PROJECT_NAME}_ferretdb_data
 
 networks:
   frontend:
