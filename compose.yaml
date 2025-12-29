@@ -91,7 +91,8 @@ services:
   postgres:
     <<: [*limits, *restart, *security, *logging]
     image: ghcr.io/ferretdb/postgres-documentdb:17
-    container_name: ${PROJECT_NAME}.postgres
+    hostname: ${PROJECT_NAME}-postgres.${SERVER_NAME}.${SUB_DOMAIN_NAME}${DOMAIN_NAME}  
+    container_name: ${PROJECT_NAME}-postgres
     # ports:
     #   - 5432:5432
     environment:
@@ -112,7 +113,8 @@ services:
   ferretdb:
     <<: [*limits, *restart, *security, *user, *logging]
     image: ghcr.io/ferretdb/ferretdb:2.7
-    container_name: ${PROJECT_NAME}.ferretdb
+    hostname: ${PROJECT_NAME}-ferretdb.${SERVER_NAME}.${SUB_DOMAIN_NAME}${DOMAIN_NAME}  
+    container_name: ${PROJECT_NAME}-ferretdb
     # ports:
     #   - 27017:27017
     environment:
