@@ -1,55 +1,101 @@
-x-usage: &default-usage
+###############################################################################
+# Start of default configs
+###############################################################################
+
+  #####################################
+  # Container base defaults
+  #####################################
   # Max Usage Limits
+x-limits: &limits
   mem_limit: ${MEM_LIMIT:-2G} # Override per container if necessary
   memswap_limit: ${MEM_SWAP_LIMIT:-2.5G}
   mem_reservation: ${MEM_RESERVATION:-64M}
   pids_limit: ${PIDS_LIMIT:-200}
   cpus: ${CPUS_LIMIT:-2} # Set below the total number of cores, for example 3.5 for 4 cores
 
-x-restart: &default-restart
   # Restart Settings
+x-restart: &restart
   stop_grace_period: ${RESTART_GRACE:-1m}
   restart: ${RESTART_MODE:-unless-stopped}
 
-x-security: &default-security
-  # Configure User and Security Opts
-  user: ${PUID:-1000}:${PGID:-1000}
+  # Configure security
+x-security: &security
   security_opt:
-   - no-new-privileges=true
+   - no-new-privileges=${NO_NEW_PRIVILEGES:-true}
 
-x-logging: &default-logging
+  # Configure User
+x-user: &user
+  user: ${PUID:-1000}:${PGID:-1000}
+
   # Configure Logging
+x-logging: &logging
   logging:
     options:
       max-size: ${LOG_MAX_SIZE:-10m}
       max-file: ${LOG_MAX_FILE:-3}
 
+  ## All base defaults in one
 x-base: &default-base
-  <<: [*default-usage, *default-restart, *default-security, *default-logging]
+  <<: [*limits, *restart, *security, *user, *logging]
 
-x-healthcheck: &default-healthcheck
+  #####################################
+  # Container healthcheck defaults
+  #####################################
+x-healthcheck: &default_healthcheck
   interval: ${HEALTH_INTERVAL:-60s}
   timeout: ${HEALTH_TIMEOUT:-10s}
   retries: ${HEALTH_RETRIES:-5}
   start_period: ${HEALTH_START:-10s}
-
-x-environment: &default-environment
+  
+  #####################################
+  # Container environment defaults
+  #####################################
+x-environment-tz: &environment_tz
   TZ: ${TZ:-America/Chicago}
+
+x-environment-user: &environment_user
   PUID: ${PUID:-1000}
   PGID: ${PGID:-1000}
- 
-# Compose Project Name
+
+  ## All environment defaults in one
+x-environment: &default_environment
+  <<: [*environment_tz, *environment_user]
+
+###############################################################################
+# Start of stack config
+###############################################################################
+# Project Name
 name: ${PROJECT_NAME}
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK}
+    external: true
+  frontend:
+    name: ${PROJECT_NAME}_frontend
+    internal: false
+    driver_opts:
+      encrypted: "true"
+  backend:
+    name: ${PROJECT_NAME}_backend
+    internal: true
+    driver_opts:
+      encrypted: "true"
+#  socket_proxy:
+#    name: ${PROJECT_NAME}_socket_proxy
+#    internal: true
+#    driver_opts:
+#      encrypted: "true"
 
 services:
   postgres:
-    <<: [*default-usage, *default-restart, *default-logging]
+    <<: [*limits, *restart, *security, *logging]
     image: ghcr.io/ferretdb/postgres-documentdb:17
     container_name: ${PROJECT_NAME}.postgres
     # ports:
     #   - 5432:5432
     environment:
-      <<: *default-environment
+      <<: [*environment_tz, *environment_user]
       POSTGRES_USER: ${KOMODO_DB_USERNAME}
       POSTGRES_PASSWORD: ${KOMODO_DB_PASSWORD}
       POSTGRES_DB: postgres
@@ -61,16 +107,16 @@ services:
       - backend
     #healthcheck:
     #  test: ["CMD", "", ""]
-    #  <<: *default-healthcheck
+    #  <<: *default_healthcheck
 
   ferretdb:
-    <<: *default-base
+    <<: [*limits, *restart, *security, *user, *logging]
     image: ghcr.io/ferretdb/ferretdb:2.7
     container_name: ${PROJECT_NAME}.ferretdb
     # ports:
     #   - 27017:27017
     environment:
-      <<: *default-environment
+      <<: [*environment_tz, *environment_user]
       FERRETDB_POSTGRESQL_URL: postgres://${KOMODO_DB_USERNAME}:${KOMODO_DB_PASSWORD}@postgres:5432/postgres
     volumes:
       - ${DOCKER_VOLUMES}/${PROJECT_NAME}/ferretdb-data:/state
@@ -84,17 +130,17 @@ services:
     #    condition: service_healthy
     #healthcheck:
     #  test: ["CMD", "", ""]
-    #  <<: *default-healthcheck
+    #  <<: *default_healthcheck
 
   core:
-    <<: *default-base
+    <<: [*limits, *restart, *security, *user, *logging]
     image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_VERSION:-latest}
     hostname: ${PROJECT_NAME}.${SERVER_NAME}.${SUB_DOMAIN_NAME}${DOMAIN_NAME}  
     container_name: ${PROJECT_NAME}
     ports:
       - 9120:9120
     environment:
-      <<: *default-environment
+      <<: [*environment_tz, *environment_user]
       KOMODO_DATABASE_ADDRESS: ferretdb:27017
       KOMODO_DATABASE_USERNAME: ${KOMODO_DB_USERNAME}
       KOMODO_DATABASE_PASSWORD: ${KOMODO_DB_PASSWORD}
@@ -122,6 +168,7 @@ services:
       ## Komodo Labels
       - "komodo.skip" # Prevent Komodo from stopping with StopAllContainers
     networks:
+      - proxy
       - frontend
       - backend
     depends_on:
@@ -134,11 +181,4 @@ services:
     ##  - host.docker.internal:host-gateway
     #healthcheck:
     #  test: ["CMD", "", ""]
-    #  <<: *default-healthcheck
-
-networks:
-  frontend:
-    name: ${PROXY_NETWORK}
-    external: true
-  backend:
-    internal: true
+    #  <<: *default_healthcheck
